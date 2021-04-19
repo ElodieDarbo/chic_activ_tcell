@@ -1,0 +1,9 @@
+.DS_Store
+.RData
+.Rhistory
+.Rprofile
+.Rproj.user/
+app_integration.Rproj
+data/
+renv/
+renv_0.13.2.tgz
