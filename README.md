@@ -23,6 +23,17 @@ Open a terminal and copy/paste/enter the following line to download the docker i
 
 `docker pull eloho/chic_tcell_activ_app:latest`
 
+### Lauching application using command line
+
+Open a terminal and go to the folder containing the data and scripts folders. 
+
+`docker run --name=chic_app --memory=4g --rm -d -v $PWD/data:/data -v $PWD/scripts:/scripts  -p 3838:3838 eloho/chic_tcell_activ_app:latest`
+
+The application is now ready to use. You can click on the link bellow or copy/paste this address in you favorite web navigator:
+
+[http://localhost:3838](http://localhost:3838)
+
+
 ### Launching application using Docker Desktop
 
 Open the Docker Desktop. 
@@ -72,17 +83,6 @@ You have now a bit of time to read the introduction in the 'Acceuil' tab while t
 
 **NB**: While. running the app, the screen can become grey-ish and the app does not respond anymore. Check then on the 'Containers/Apps' tab. If the container is grey with a message EXITED (137), you may need to increase the accessible memory to 5 GB.
 ![](./img/docker_13.png)
-
-
-### Lauching application using command line
-
-Open a terminal and go to the folder containing the data and scripts folders. 
-
-`docker run --name=chic_app --memory=4g --rm -d -v $PWD/data:/data -v $PWD/scripts:/scripts  -p 3838:3838 chic_tcell_activ_app:latest`
-
-The application is now ready to use. You can click on the link bellow or copy/paste this address in you favorite web navigator:
-
-[http://localhost:3838](http://localhost:3838)
 
 ### Citation
 
