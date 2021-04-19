@@ -16,4 +16,4 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: eloho/chic_tcell_activ_app
           tags: latest
-	  tag_with_ref: true
+          tag_with_ref: true
