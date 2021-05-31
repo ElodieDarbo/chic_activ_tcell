@@ -1,4 +1,5 @@
 main.dir <- ""
+#main.dir <- "/Users/elodiedarbo/Documents/projects/C-HiC_cell_T/app_integration"
 res.dir <- data.dir <- file.path(main.dir,"data")
 
 options(shiny.maxRequestSize=50*1024^2) 
@@ -313,6 +314,100 @@ shinyServer(function(input, output) {
              clustering_method = "ward.D",fontsize = 7,color=colorRampPalette(colours()[c(1,142,53,34,35,24)])(100),breaks=seq(0,1,0.01))
   })
   
+  bait.cluster.interaction <- reactive({
+    interacting.tSNE <- interacting.tSNE()
+    # m[,c("heatmap.info","class","cluster1","ATAC.id1","fragment.id1","ATAC.id2","fragment.id2","cluster2")]
+    sense <- interacting.tSNE[grepl("^chr",fragment.id2)]
+    antisense <- interacting.tSNE[grepl("^chr",fragment.id1)]
+    interacting.tSNE <- rbind(sense[,list(fragment.id1,cluster1,fragment.id2,cluster2,ATAC.id2)],
+                              antisense[,list(fragment.id1=fragment.id2,cluster1=cluster2,fragment.id2=fragment.id1,cluster2=cluster1,ATAC.id2=ATAC.id1)])
+    interacting.tSNE <- unique(interacting.tSNE)
+    if (!"no.ATAC"%in%input$display.no.clust){
+      interacting.tSNE <- interacting.tSNE[cluster2!="no.ATAC"]
+    }
+    if (!"not.in.tSNE"%in%input$display.no.clust){
+      interacting.tSNE <- interacting.tSNE[cluster2!="not.in.tSNE"]
+    }
+    if (!"cluster0"%in%input$display.no.clust){
+      interacting.tSNE <- interacting.tSNE[cluster2!="0"]
+    }
+    clust.assoc <- as.data.frame.matrix(table(interacting.tSNE$fragment.id1,interacting.tSNE$cluster2))
+    
+    list(clust.assoc=clust.assoc,raw=interacting.tSNE)
+  })
+  
+  output$bait.cluster.interaction.plot <- renderPlot({
+    bait.cluster.interaction <- bait.cluster.interaction()$clust.assoc
+    if (input$cl.inter=="count"){
+      pheatmap(as.data.frame(t(bait.cluster.interaction)),show_rownames = T, 
+               show_colnames = F,
+               border_color = NA,
+               color = colorRampPalette(c("white","yellow","orange","red","black"))(100),
+               breaks = seq(0,max(bait.cluster.interaction),max(bait.cluster.interaction)/100))
+    }
+    else if (input$cl.inter=="frequency"){
+      tot <- apply(bait.cluster.interaction,1,sum)
+      bait.cluster.interaction <- bait.cluster.interaction/tot
+      pheatmap(as.data.frame(t(bait.cluster.interaction)),show_rownames = T, 
+               show_colnames = F,
+               border_color = NA,
+               color = colorRampPalette(c("white","yellow","orange","red","black"))(100),
+               breaks = seq(0,1,0.01))
+    }
+  })
+  
+  output$choose.cls <- renderUI({
+    mat <- bait.cluster.interaction()$clust.assoc
+    checkboxGroupInput("choose.cl","Select clusters having other fragments",choices=c("all",colnames(mat)),inline = T)
+  })
+  
+  show.bait.w.other.cl <- eventReactive(input$go.show.me.genes,{
+    mat <- bait.cluster.interaction()$clust.assoc
+    print(dim(mat))
+    cl <- input$choose.cl
+    print(cl)
+    if (length(cl)>1){
+      select.rows <- apply(mat[,cl],1,function(x){
+        sum(x>0) == length(x)
+      })
+    }
+    else if (length(cl)==1 & cl!="all"){
+      select.rows <- mat[,cl]>0
+    }
+    else if (length(cl)==1 & cl=="all"){
+      select.rows <- rep(T,ncol(mat))
+    }
+    else {
+      select.rows <- F
+    }
+    text.show <- paste("The cluster(s)",paste(cl,collapse = ", "), "contain(s) fragments interacting with", sum(select.rows), "genes: ",paste(row.names(mat)[select.rows],collapse=", "))
+    if (cl[1]!="all") {
+      mat <- mat[select.rows,cl,drop=F]
+    }
+    mat$SYMBOL <- row.names(mat)
+    mat <- mat[,sort(colnames(mat),decreasing = T)]
+    print(select.rows)
+    list(text.show=text.show,mat=mat)
+  })
+  
+  output$show.bait.w.other.cl <- renderText({
+    select.rows <- show.bait.w.other.cl()$text.show
+  })
+  
+  output$show.bait.w.other.matrix <- renderTable({
+    select.rows <- show.bait.w.other.cl()$mat
+  })
+  
+  tab.cl.frag.int <- eventReactive(input$download.sel.tab,{
+    select.rows <- show.bait.w.other.cl()$mat
+    cl <- input$choose.cl
+    write.table(select.rows,file.path(data.dir,"tables",paste0("selected_genes_with_int_in_cl_",paste(cl,collapse="_"),".tab")),sep="\t",quote=F)
+    text <- paste0("File ",paste0("selected_genes_with_int_in_cl_",paste(cl,collapse="_"),".tab")," has been saved.")
+  })  
+  
+  output$tab.cl.frag.int <- renderText({
+    tab.cl.frag.int()
+  })
   
   #################################################################################################
   ## CHiC plots 
@@ -1289,7 +1384,8 @@ shinyServer(function(input, output) {
       geom_hline(yintercept=0,linetype="dashed",size=0.3) +
       geom_vline(xintercept=0,linetype="dashed",size=0.3) 
     if (is.numeric(tsne.group$to.eval)){
-      g <- g + scale_colour_gradient2(low = "blue",mid = "lightgrey",high = "red",midpoint = 0)
+      g <- g + scale_colour_gradientn(colours = colours()[c(234,420,34,36,24)])
+        #scale_colour_gradient2(low = "blue",mid = "lightgrey",high = "red",midpoint = 0)
       #colours = colours()[c(234,420,34,36,24)]
     } 
     else if (input$select.TFs.tsne.list%in%c("H3K4me1","H3K4me3","H3K27Ac","H3K27me3")) {

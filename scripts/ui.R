@@ -86,6 +86,11 @@ shinyUI(
                                 p("You can download this table giving a name to the file in the text box and clicking 'Dowload table', an extention '.tab' is added to the file name by default."),
                                 p("Some details about genes involved in the interactions are displayed. The column selected indicates if the gene is part of the final selection."),
                                 p("You can download this table giving a name to the file in the text box and clicking 'Dowload table', an extention '.tab' is added to the file name by default."),
+                                h5("Heatmap bait frequency other clusters"),
+                                p("In this tab the results depend on the selection made on the tSNE plot. You can select all fragments for an overall analysis."),
+                                p("The heatmap is showing either the count or the frequency (cells) of 'other-fragment' interacting ATAC peaks occurring in each cluster (rows) by bait (columns)."),
+                                p("You can select cluster(s) of interest and display the genes involved in interaction with fragments having ATAC in all selected clusters (intersection)."),
+                                p("You can download the corresponding matrix as a tab file."),
                                 h3("Misc"),
                                 p("In this section you have access to the data (interactions, fragments, ATAC peaks, gene expression) through interactive tables in which you can easily search for genes, fragments etc."),
                                 p("You can dowload this tables, their names are predefined."),
@@ -197,7 +202,20 @@ shinyUI(
                                            tabPanel("Heatmap TFBS/chip frequency clusters",
                                                     plotOutput("heatmap.freq.TFBS",width=1200,height=600),
                                                     plotOutput("heatmap.freq.chip",height=600),
-                                                      )
+                                                      ),
+                                           tabPanel("Heatmap bait frequency other clusters",
+                                                    selectInput(inputId = "cl.inter",label = "Choose value to plot",choices = c("count","frequency")),
+                                                    checkboxGroupInput("display.no.clust","Display fragments without ATAC and/or not in tSNE",choices = c("in.tSNE","no.ATAC","no.tSNE","cluster0"),selected = "in.tSNE",inline = T),
+                                                    plotOutput("bait.cluster.interaction.plot",width=800,height=800),
+                                                    p("Selecting 'all' will display and allow downloading the whole matrix. Choosing several clusters end up to select an intersection, meaning the baits have to interact with fragments in all clusters."),
+                                                    uiOutput("choose.cls"),
+                                                    actionButton("go.show.me.genes","Show selected genes"),
+                                                    textOutput("show.bait.w.other.cl"),
+                                                    actionButton("download.sel.tab","Download selected genes and cluster"),
+                                                    textOutput("tab.cl.frag.int"),
+                                                    tableOutput("show.bait.w.other.matrix")
+                                                    
+                                           )
                                            #tabPanel("Cluster network",
                                                     
                                           # ),
