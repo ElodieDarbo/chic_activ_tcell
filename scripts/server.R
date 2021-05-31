@@ -342,8 +342,9 @@ shinyServer(function(input, output) {
       pheatmap(as.data.frame(t(bait.cluster.interaction)),show_rownames = T, 
                show_colnames = F,
                border_color = NA,
-               color = colorRampPalette(c("white","yellow","orange","red","black"))(100),
-               breaks = seq(0,max(bait.cluster.interaction),max(bait.cluster.interaction)/100))
+               clustering_distance_cols = "binary",
+               color = colorRampPalette(c("white","orange","red","brown","black"))(100),
+               breaks = seq(0,10,0.1))
     }
     else if (input$cl.inter=="frequency"){
       tot <- apply(bait.cluster.interaction,1,sum)
@@ -351,7 +352,8 @@ shinyServer(function(input, output) {
       pheatmap(as.data.frame(t(bait.cluster.interaction)),show_rownames = T, 
                show_colnames = F,
                border_color = NA,
-               color = colorRampPalette(c("white","yellow","orange","red","black"))(100),
+               clustering_distance_cols = "binary",
+               color = colorRampPalette(c("white","orange","red","brown","black"))(100),
                breaks = seq(0,1,0.01))
     }
   })
@@ -367,9 +369,15 @@ shinyServer(function(input, output) {
     cl <- input$choose.cl
     print(cl)
     if (length(cl)>1){
-      select.rows <- apply(mat[,cl],1,function(x){
-        sum(x>0) == length(x)
-      })
+      select.rows <- apply(mat[,cl],1,function(x,opt){
+        if (opt=="AND"){
+          f <- sum(x>0) == length(x)
+        }
+        else {
+          f <- sum(x>0) > 0
+        }
+        
+      },input$AND.OR.cl.choice)
     }
     else if (length(cl)==1 & cl!="all"){
       select.rows <- mat[,cl]>0
@@ -381,6 +389,10 @@ shinyServer(function(input, output) {
       select.rows <- F
     }
     text.show <- paste("The cluster(s)",paste(cl,collapse = ", "), "contain(s) fragments interacting with", sum(select.rows), "genes: ",paste(row.names(mat)[select.rows],collapse=", "))
+    if (input$cl.inter=="frequency"){
+      tot <- apply(mat,1,sum)
+      mat <- mat/tot
+    }
     if (cl[1]!="all") {
       mat <- mat[select.rows,cl,drop=F]
     }
